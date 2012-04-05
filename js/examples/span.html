@@ -1,0 +1,86 @@
+<html>
+<!--
+Example HTML for the Javascript elastic tabstops library.
+
+Converts a PRE into a DIV with elastic tabstops created using SPAN
+elements with an explicit width.
+
+Copyright (c) 2012 Tommie Gannert
+Distributed under the MIT license
+-->
+<head>
+	<title>Elastic tabstops &lt;span&gt; example</title>
+	<script type="text/javascript" src="../elastic-tabstops.js"></script>
+	<script type="text/javascript">
+		function getElementWidth(el) {
+			return el.offsetWidth
+		}
+
+		function renderElasticTabstops(src, dest) {
+			var content = src.textContent.split("\n")
+			var block = []
+
+			for (var i = 0; i < content.length; ++i) {
+				var line = content[i].split("\t")
+				var columns = []
+
+				for (var j = 0; j < line.length; ++j) {
+					var span = document.createElement("SPAN")
+
+					span.textContent = line[j]
+					columns.push(span)
+					dest.appendChild(span)
+				}
+
+				block.push(columns)
+				dest.appendChild(document.createElement("BR"))
+			}
+
+			src.style.display = "none"
+
+			var tabSizes = ElasticTabstops.getTabSizes(
+				block,
+				ElasticTabstops.TabStops({
+					minSize: 10,
+					stepSize: 10,
+					margin: 10,
+				}),
+				{ sizeFunc: getElementWidth })
+
+			var childNodes = dest.childNodes
+			var lineNo = 0
+			var colNo = 0
+
+			for (var i = 0; i < childNodes.length; ++i) {
+				var el = childNodes.item(i)
+
+				if (el.tagName == "SPAN") {
+					el.textContent = el.textContent + "\t"
+					el.style.display = "inline-block"
+					el.style.width = tabSizes[lineNo][colNo] + "px"
+					colNo++
+				} else if (el.tagName == "BR") {
+					lineNo++
+					colNo = 0
+				}
+			}
+		}
+
+		function onLoad() {
+			renderElasticTabstops(
+				document.getElementById("code"),
+				document.getElementById("elastictabstops"))
+		}
+	</script>
+</head>
+<body onload="onLoad()">
+	<h1>Elastic tabstops &lt;span&gt; example</h1>
+	<pre id="elastictabstops"></pre>
+<pre id="code">
+a	a
+slashdot	tv
+	keso	trag
+q	v	asd
+</pre>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<html>
+<!--
+Driver HTML for JS unit tests.
+
+Use gen-js-test(1) to generate a file with included test cases.
+
+Copyright (c) 2012 Tommie Gannert
+Distributed under the MIT license
+-->
+<head>
+	<script type="text/javascript" src="elastic-tabstops.js"></script>
+	<?tests?>
+</head>
+<body>
+<script type="text/javascript">
+	function checkTabSizes(real, expected) {
+		if (real.length != expected.length)
+			return false
+
+		for (var i = 0; i < real.length; ++i) {
+			if (real[i].length != expected[i].length)
+				return false
+
+			for (var j = 0; j < real[i].length; ++j) {
+				if (real[i][j] != expected[i][j])
+					return false
+			}
+		}
+
+		return true
+	}
+
+	var numTests = 0
+	var numFailures = 0
+
+	for (var name in TESTS) {
+		var test = TESTS[name]
+		var tabSizes = ElasticTabstops.getTabSizes(
+			test.textBlock,
+			ElasticTabstops.TabStops(test.tabStops),
+			test.params)
+
+		if (checkTabSizes(tabSizes, test.tabSizes)) {
+			console.info(name, 'success')
+		} else {
+			console.info(name, 'failed', tabSizes, test.tabSizes)
+			numFailures++
+		}
+
+		numTests++
+	}
+
+	document.writeln(numTests + " tests, " + numFailures + " failures")
+</script>
+</body>
+</html>
