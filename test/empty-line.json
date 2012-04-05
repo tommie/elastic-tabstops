@@ -1,0 +1,15 @@
+{
+	"textBlock": [
+		[]
+	],
+
+	"tabSizes": [
+		[]
+	],
+
+	"tabStops": {
+		"minLength": 1,
+		"stepSize": 1,
+		"margin": 1
+	}
+}

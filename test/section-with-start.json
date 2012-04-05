@@ -1,0 +1,25 @@
+{
+	"textBlock": [
+		[ "a", "small" ],
+		[ "world", "mr", "blue" ],
+		[ "so", "hello" ],
+		[ "world" ]
+	],
+
+	"tabSizes": [
+		[ 15, 3 ],
+		[ 15 ]
+	],
+
+	"params": {
+		"startLineNo": 1,
+		"endLineNo": 3,
+		"startTabSizes": [ 15 ]
+	},
+
+	"tabStops": {
+		"minLength": 1,
+		"stepSize": 1,
+		"margin": 1
+	}
+}

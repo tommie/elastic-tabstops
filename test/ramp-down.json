@@ -1,0 +1,19 @@
+{
+	"textBlock": [
+		[ "it's", "a", "small" ],
+		[ "world", "mr" ],
+		[ "blue" ]
+	],
+
+	"tabSizes": [
+		[ 6, 2 ],
+		[ 6 ],
+		[]
+	],
+
+	"tabStops": {
+		"minLength": 1,
+		"stepSize": 1,
+		"margin": 1
+	}
+}

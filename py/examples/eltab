@@ -1,0 +1,68 @@
+#! /usr/bin/python -O
+"""
+Example of the Python library for elastic tabstops.
+
+Reads text on stdin, expands tabs and writes to stdout.
+
+Attempts to be efficient by only storing one paragraph at a time in memory.
+
+Copyright (c) 2012 Tommie Gannert
+Distributed under the MIT license
+"""
+import codecs
+import optparse
+import sys
+
+import elastictabstops as et
+
+
+def expand_block(block, outf, tab_stops):
+    for (line, tab_sizes) in zip(block.lines, et.iter_tab_sizes(block, tab_stops)):
+        # iter_tab_sizes() does not return the size of the last column, so pretend
+        # it is zero to have it tight around the text.
+        print >>outf, u''.join(text.ljust(size) for (text, size) in zip(line, tab_sizes + [ 0 ]))
+
+def expand_file(inf, outf, tab_stops):
+    paragraph = []
+
+    outw = codecs.getwriter(sys.getdefaultencoding())(outf)
+
+    for line in codecs.getreader(sys.getdefaultencoding())(inf):
+        row = line.rstrip().split('\t')
+
+        if len(row) == 1 and not row[0]:
+            row = []
+
+        paragraph.append(row)
+
+        if not row:
+            expand_block(et.ListTextBlock(paragraph), outw, tab_stops)
+            paragraph = []
+
+    if paragraph:
+        expand_block(et.ListTextBlock(paragraph), outw, tab_stops)
+
+if __name__ == '__main__':
+    optp = optparse.OptionParser(usage='%prog [options]')
+    optp.add_option(
+        '--margin', metavar='INT',
+        type='int', default=3,
+        help='number of characters margin between columns [%default]')
+    optp.add_option(
+        '--min-length', metavar='INT',
+        type='int', default=1,
+        help='minimum number of characters per columns (excl. margin) [%default]')
+    optp.add_option(
+        '--step-size', metavar='INT',
+        type='int', default=3,
+        help='tab stop alignment (excl. margin) [%default]')
+
+    (options, args) = optp.parse_args()
+
+    expand_file(
+        sys.stdin,
+        sys.stdout,
+        et.TabStops(
+            margin=options.margin,
+            min_length=options.min_length,
+            step_size=options.step_size))
