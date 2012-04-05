@@ -12,7 +12,7 @@
 	],
 
 	"tabStops": {
-		"minLength": 1,
+		"minSize": 1,
 		"stepSize": 1,
 		"margin": 1
 	}

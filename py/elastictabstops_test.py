@@ -46,20 +46,11 @@ class IgnoreLastTest(unittest.TestCase):
             list(et._ignore_last([ 'Hello', 'world!' ])),
             [ 'Hello' ])
 
-class TextBlockTest(unittest.TestCase):
-    def test_line_count(self):
-        self.assertRaises(NotImplementedError, lambda: et.TextBlock().line_count)
-
-    def test_iter_lines(self):
-        self.assertRaises(NotImplementedError, et.TextBlock().iter_lines, 0, 0)
-
 class ElasticTabstopsTest(unittest.TestCase):
     pass
 
 def _add_test_cases(cls):
     _ITER_TAB_STOPS_KEYS = {
-        'startLineNo': 'start_line_no',
-        'endLineNo': 'end_line_no',
         'startTabSizes': 'start_tab_sizes',
         'endTabSizes': 'end_tab_sizes',
     }
@@ -68,8 +59,8 @@ def _add_test_cases(cls):
         return dict((_ITER_TAB_STOPS_KEYS[k], v) for (k, v) in params.iteritems())
 
     _TAB_STOPS_KEYS = {
-        'minLength': 'min_length',
         'margin': 'margin',
+        'minSize': 'min_size',
         'stepSize': 'step_size',
     }
 
@@ -80,7 +71,7 @@ def _add_test_cases(cls):
         def func(self):
             self.assertEquals(
                 list(et.iter_tab_sizes(
-                    et.ListTextBlock(data['textBlock']),
+                    data['textBlock'],
                     et.TabStops(**_translate_tab_stops(data.get('tabStops', {}))),
                     **_translate_iter_tab_stops(data.get('params', {})))),
                 data['tabSizes'])

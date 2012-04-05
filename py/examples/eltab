@@ -17,7 +17,7 @@ import elastictabstops as et
 
 
 def expand_block(block, outf, tab_stops):
-    for (line, tab_sizes) in zip(block.lines, et.iter_tab_sizes(block, tab_stops)):
+    for (line, tab_sizes) in zip(block, et.iter_tab_sizes(block, tab_stops)):
         # iter_tab_sizes() does not return the size of the last column, so pretend
         # it is zero to have it tight around the text.
         print >>outf, u''.join(text.ljust(size) for (text, size) in zip(line, tab_sizes + [ 0 ]))
@@ -36,11 +36,11 @@ def expand_file(inf, outf, tab_stops):
         paragraph.append(row)
 
         if not row:
-            expand_block(et.ListTextBlock(paragraph), outw, tab_stops)
+            expand_block(paragraph, outw, tab_stops)
             paragraph = []
 
     if paragraph:
-        expand_block(et.ListTextBlock(paragraph), outw, tab_stops)
+        expand_block(paragraph, outw, tab_stops)
 
 if __name__ == '__main__':
     optp = optparse.OptionParser(usage='%prog [options]')
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         type='int', default=3,
         help='number of characters margin between columns [%default]')
     optp.add_option(
-        '--min-length', metavar='INT',
+        '--min-size', metavar='INT',
         type='int', default=1,
         help='minimum number of characters per columns (excl. margin) [%default]')
     optp.add_option(
@@ -64,5 +64,5 @@ if __name__ == '__main__':
         sys.stdout,
         et.TabStops(
             margin=options.margin,
-            min_length=options.min_length,
+            min_size=options.min_size,
             step_size=options.step_size))

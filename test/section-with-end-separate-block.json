@@ -8,18 +8,19 @@
 	],
 
 	"tabSizes": [
-		[ 15 ],
-		[ 15, 3 ]
+		[],
+		[ 6 ],
+		[ 6, 3 ],
+		[ 6 ],
+		[]
 	],
 
 	"params": {
-		"startLineNo": 1,
-		"endLineNo": 3,
 		"endTabSizes": [ 15 ]
 	},
 
 	"tabStops": {
-		"minLength": 1,
+		"minSize": 1,
 		"stepSize": 1,
 		"margin": 1
 	}
