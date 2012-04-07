@@ -74,6 +74,51 @@ def _ignore_last(iter):
 
         prev = i
 
+def _iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_sizes=[]):
+    """See iter_tab_sizes on how this function works.
+
+       The only difference is that this function returns boxed integers
+       instead of plain integers. This allows you to update the values of
+       all affected lines using a single operation.
+
+       @rtype : iter([[any]])
+    """
+    # Wrap the integers in a list to get references to integers.
+    # The original Java code uses MutableInteger for this.
+    # Wrapping in a list seems to be the most efficient way of doing this in
+    # Python 2.7.
+    tab_sizes = [[ x ] for x in start_tab_sizes ]
+
+    def append_tab_sizes(line):
+        col = -1
+
+        for (col, tab_size) in enumerate(line):
+            if col >= len(tab_sizes):
+                # A new column was created.
+                assert col == len(tab_sizes)
+                # Wrap the integer for possible later update.
+                tab_sizes.append([ tab_size ])
+            else:
+                # Update an old tab size.
+                tab_sizes[col][0] = max(tab_sizes[col][0], tab_size)
+
+        return col + 1
+
+    line_columns = [] # [[[int]]]
+
+    # For each line, increase tab sizes as appropriate.
+    for line in lines:
+        num_columns = append_tab_sizes(map(
+            tab_stops.get_tab_size,
+            map(size_func, _ignore_last(line))))
+
+        del tab_sizes[num_columns:]
+        line_columns.append(list(tab_sizes))
+
+    append_tab_sizes(end_tab_sizes)
+
+    return line_columns
+
 def iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_sizes=[]):
     """Return the tab stops of the given text block.
 
@@ -111,77 +156,6 @@ def iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_
        @return: an iterator of lists of tab sizes, with one value per line.
        @rtype : iter([any])
     """
-    tab_sizes = list(start_tab_sizes)
-
-    # These are indices into tab_sizes, one for each column of the line.
-    # This indirection allows us to easily update the indentation for
-    # multiple lines. The original Java code used a boxed integer instead.
-    initial_column_starts = range(len(tab_sizes))
-
-    def append_tab_sizes(line):
-        """Update the tab_sizes and column_starts with newly found tab sizes.
-
-           Note that this function does not prune the column_starts list.
-
-           @param line: an iterable of tab sizes.
-           @type  line: iter(any)
-           @return: the number of columns
-           @rtype:  int
-        """
-        col = -1
-
-        for (col, tab_size) in enumerate(line):
-            if col >= len(column_starts):
-                # A new column was created.
-                assert col == len(column_starts)
-                tab_sizes.append(tab_size)
-                column_starts.append(len(tab_sizes) - 1)
-            else:
-                # Update an old tab size.
-                tab_sizes[column_starts[col]] = max(tab_sizes[column_starts[col]], tab_size)
-
-        return col + 1
-
-    column_starts = list(initial_column_starts)
-    line_lengths = [] # [(int, int)]
-    old_num_columns = -1 # Make sure the first item is always output.
-    line_no = -1
-
-    # For each line, increase tab sizes as appropriate.
-    for (line_no, line) in enumerate(lines):
-        num_columns = append_tab_sizes(map(
-            tab_stops.get_tab_size, map(
-                size_func,
-                _ignore_last(line))))
-
-        del column_starts[num_columns:]
-
-        if num_columns != old_num_columns:
-            line_lengths.append((line_no, num_columns))
-
-        old_num_columns = num_columns
-
-    append_tab_sizes(end_tab_sizes)
-
-    # Add the ending record to allow outputting the last group within the loop.
-    line_lengths.append((line_no + 1, 0))
-
-    column_starts = list(initial_column_starts)
-    tab_sizes_index = len(column_starts)
-    old_line_no = 0
-
-    # Iterate over groups of lines with the same lengths.
-    for (group_line_no, num_columns) in line_lengths:
-        # Yield one value per line.
-        for line_no in xrange(old_line_no, group_line_no):
-            # Note that this uses the column settings from the previous group.
-            yield [tab_sizes[i] for i in column_starts]
-
-        # Update column_starts.
-        while len(column_starts) < num_columns:
-            column_starts.append(tab_sizes_index)
-            tab_sizes_index += 1
-
-        del column_starts[num_columns:]
-
-        old_line_no = group_line_no
+    for tab_sizes in _iter_tab_sizes(lines, tab_stops, size_func=size_func, start_tab_sizes=start_tab_sizes, end_tab_sizes=end_tab_sizes):
+        # Unpack the wrapped integer.
+        yield [i[0] for i in tab_sizes]
