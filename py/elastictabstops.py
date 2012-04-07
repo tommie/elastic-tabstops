@@ -112,6 +112,10 @@ def iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_
        @rtype : iter([any])
     """
     tab_sizes = list(start_tab_sizes)
+
+    # These are indices into tab_sizes, one for each column of the line.
+    # This indirection allows us to easily update the indentation for
+    # multiple lines. The original Java code used a boxed integer instead.
     initial_column_starts = range(len(tab_sizes))
 
     def append_tab_sizes(line):
