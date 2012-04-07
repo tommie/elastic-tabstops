@@ -74,20 +74,16 @@ def _ignore_last(iter):
 
         prev = i
 
-def _iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_sizes=[]):
+def _iter_tab_sizes(lines, tab_stops, size_type, size_update_func, size_func=len, start_tab_sizes=[], end_tab_sizes=[]):
     """See iter_tab_sizes on how this function works.
 
        The only difference is that this function returns boxed integers
        instead of plain integers. This allows you to update the values of
        all affected lines using a single operation.
 
-       @rtype : iter([[any]])
+       @rtype : iter([size_type])
     """
-    # Wrap the integers in a list to get references to integers.
-    # The original Java code uses MutableInteger for this.
-    # Wrapping in a list seems to be the most efficient way of doing this in
-    # Python 2.7.
-    tab_sizes = [[ x ] for x in start_tab_sizes ]
+    tab_sizes = [size_type(x) for x in start_tab_sizes]
 
     def append_tab_sizes(line):
         col = -1
@@ -97,10 +93,10 @@ def _iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab
                 # A new column was created.
                 assert col == len(tab_sizes)
                 # Wrap the integer for possible later update.
-                tab_sizes.append([ tab_size ])
+                tab_sizes.append(size_type(tab_size))
             else:
                 # Update an old tab size.
-                tab_sizes[col][0] = max(tab_sizes[col][0], tab_size)
+                size_update_func(tab_sizes[col], tab_size)
 
         return col + 1
 
@@ -156,6 +152,16 @@ def iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_
        @return: an iterator of lists of tab sizes, with one value per line.
        @rtype : iter([any])
     """
-    for tab_sizes in _iter_tab_sizes(lines, tab_stops, size_func=size_func, start_tab_sizes=start_tab_sizes, end_tab_sizes=end_tab_sizes):
+    # Wrap the integers in a list to get references to integers.
+    # The original Java code uses MutableInteger for this.
+    # Wrapping in a list seems to be the most efficient way of doing this in
+    # Python 2.7.
+    def box(value):
+        return [ value ]
+
+    def update_list_max(u, value):
+        u[0] = max(u[0], value)
+
+    for tab_sizes in _iter_tab_sizes(lines, tab_stops, box, update_list_max, size_func=size_func, start_tab_sizes=start_tab_sizes, end_tab_sizes=end_tab_sizes):
         # Unpack the wrapped integer.
         yield [i[0] for i in tab_sizes]
