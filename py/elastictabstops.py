@@ -8,7 +8,14 @@ For an example usage, see py/examples/eltab.
 Copyright (c) 2012 Tommie Gannert
 Distributed under the MIT license
 """
+import heapq
 import math
+
+__all__ = [
+    'iter_tab_sizes',
+    'TabStops',
+    'TextBlock',
+]
 
 
 class TabStops(object):
@@ -165,3 +172,142 @@ def iter_tab_sizes(lines, tab_stops, size_func=len, start_tab_sizes=[], end_tab_
     for tab_sizes in _iter_tab_sizes(lines, tab_stops, box, update_list_max, size_func=size_func, start_tab_sizes=start_tab_sizes, end_tab_sizes=end_tab_sizes):
         # Unpack the wrapped integer.
         yield [i[0] for i in tab_sizes]
+
+class TextBlock(object):
+    def __init__(self, lines, tab_stops, size_func=len):
+        self.tab_stops = tab_stops
+        self.size_func = size_func
+        self._lines = [] #lines
+        self._tab_sizes = [] #list(self._iter_tab_sizes(lines))
+        self._splice(0, 0, lines)
+
+    def __delitem__(self, index):
+        if isinstance(index, slice): return self._splice(index.start, index.stop, [])
+        elif index < 0: return self._splice(index, len(self._lines) + index + 1, [])
+        else: return self._splice(index, index + 1, [])
+
+    def __getitem__(self, index):
+        return self._lines.__getitem__(index)
+
+    def __len__(self):
+        return self._lines.__len__()
+
+    def __setitem__(self, index, value):
+        if isinstance(index, slice): return self._splice(index.start, index.stop, value)
+        elif index < 0: return self._splice(index, len(self._lines) + index + 1, [ value ])
+        else: return self._splice(index, index + 1, [ value ])
+
+    def append(self, line):
+        n = len(self._lines)
+        return self._splice(n, n, [ line ])
+
+    def count(self, x):
+        return self._lines.count(x)
+
+    def extend(self, lines):
+        n = len(self._lines)
+        return self._splice(n, n, lines)
+
+    def index(self, *args):
+        return self._lines.index(*args)
+
+    def insert(self, index, value):
+        return self._splice(index, index, [ value ])
+
+    def pop(self, index=-1):
+        if index < 0: return self._splice(index, len(self._lines) + index + 1, [])
+        else: return self.splice(index, index + 1, [])
+
+    def remove(self, value):
+        index = self.index(value)
+        return self.splice(index, index + 1, [])
+
+    def reverse(self):
+        self._tab_sizes.reverse()
+        return self._lines.reverse()
+
+    def sort(self, *args, **kwargs):
+        raise NotImplementedError('sort')
+
+    def iter_tab_sizes(self, start=0, end=None):
+        if end is None:
+            end = len(self._lines)
+
+        for line in self._tab_sizes[start:end]:
+            # Value negated to get the largest value at the root.
+            yield [-x[0] for x in line]
+
+    @staticmethod
+    def _heap_box(value):
+        # Value negated to get the largest value at the root.
+        return [ -value ]
+
+    @staticmethod
+    def _heap_push(heap, value):
+        # Value negated to get the largest value at the root.
+        heapq.heappush(heap, -value)
+
+    def _splice(self, start, end, lines):
+        if start < 0: start += len(self._lines)
+        if end < 0: end += len(self._lines)
+
+        # Remove the old values from the heaps.
+        for line_no in xrange(start, end):
+            ts = self._tab_sizes[line_no]
+
+            for col in xrange(len(ts)):
+                ts[col].remove(
+                    -self.tab_stops.get_tab_size(self.size_func(
+                        self._lines[line_no][col])))
+
+        self._lines[start:end] = lines
+        self._tab_sizes[start:end] = [[] for i in xrange(len(lines))]
+
+        if start > 0:
+            tab_sizes = list(self._tab_sizes[start - 1])
+        else:
+            tab_sizes = []
+
+        # Update tab sizes for the new lines.
+        for (i, line) in enumerate(self._lines[start:start + len(lines)]):
+            ts = self._tab_sizes[start + i]
+
+            for col in xrange(len(line) - 1):
+                tab_size = self.tab_stops.get_tab_size(self.size_func(line[col]))
+
+                if col >= len(tab_sizes):
+                    assert col == len(tab_sizes)
+                    ts.append(self._heap_box(tab_size))
+                    tab_sizes = list(ts)
+                else:
+                    ts.append(tab_sizes[col])
+                    self._heap_push(ts[col], tab_size)
+
+            del tab_sizes[max(0, len(line) - 1):]
+
+        if start + len(lines) < len(self._lines):
+            # Update the tab sizes for the following lines.
+            # We may have introduced a block split, meaning we have to
+            # assign new heaps for the lines below the insertion point.
+            num_columns = len(self._lines[start + len(lines)]) - 1
+            new_tab_sizes = list(tab_sizes)
+
+            # Change references for all lines after so they don't share a heap
+            # with the top ones after a block break.
+            for (i, line) in enumerate(self._lines[start + len(lines):]):
+                num_columns = min(num_columns, len(line) - 1)
+
+                if num_columns == 0:
+                    # End-of-block, so nothing more to do.
+                    break
+
+                for col in xrange(num_columns):
+                    tab_size = self.tab_stops.get_tab_size(self.size_func(line[col]))
+
+                    if col >= len(new_tab_sizes):
+                        new_tab_sizes.append(self._heap_box(tab_size))
+
+                    if self._tab_sizes[start + len(lines) + i][col] is not new_tab_sizes[col]:
+                        self._tab_sizes[start + len(lines) + i][col].remove(-self.tab_stops.get_tab_size(self.size_func(line[col])))
+                        self._tab_sizes[start + len(lines) + i][col] = new_tab_sizes[col]
+                        self._heap_push(new_tab_sizes[col], tab_size)

@@ -95,5 +95,83 @@ def _add_test_cases(cls):
 
 _add_test_cases(ElasticTabstopsTest)
 
+class TextBlockTest(unittest.TestCase):
+    def setUp(self):
+        self.tb = et.TextBlock(
+            [
+                [ 'it', 'is', 'a' ],
+                [ 'small', 'world' ],
+            ],
+            et.TabStops())
+
+    def tearDown(self):
+        del self.tb
+
+    def test_create(self):
+        pass
+
+    def test_len(self):
+        self.assertEquals(len(self.tb), 2)
+
+    def test_delitem(self):
+        del self.tb[0]
+        self.assertEquals(len(self.tb), 1)
+
+    def test_delslice(self):
+        del self.tb[0:1]
+        self.assertEquals(len(self.tb), 1)
+
+    def test_getitem(self):
+        self.assertEquals(self.tb[0], [ 'it', 'is', 'a' ])
+
+    def test_getslice(self):
+        self.assertEquals(self.tb[0:1], [ [ 'it', 'is', 'a' ] ])
+
+    def test_setitem(self):
+        self.tb[1] = [ 'abc', 'def' ]
+        self.assertEquals(len(self.tb), 2)
+        self.assertEquals(self.tb[1], [ 'abc', 'def' ])
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 4, 3 ], [ 4 ] ])
+
+    def test_setslice(self):
+        self.tb[1:2] = [ [ 'abc', 'def' ] ]
+        self.assertEquals(len(self.tb), 2)
+        self.assertEquals(self.tb[1], [ 'abc', 'def' ])
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 4, 3 ], [ 4 ] ])
+
+    def test_append(self):
+        self.tb.append([ 'abcdef', 'ghi' ])
+        self.assertEquals(len(self.tb), 3)
+        self.assertEquals(self.tb[-1], [ 'abcdef', 'ghi' ])
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 7, 3 ], [ 7 ], [ 7 ] ])
+
+    def test_extend(self):
+        self.tb.extend([ [ 'abcdef', 'ghi' ] ])
+        self.assertEquals(len(self.tb), 3)
+        self.assertEquals(self.tb[-1], [ 'abcdef', 'ghi' ])
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 7, 3 ], [ 7 ], [ 7 ] ])
+
+    def test_insert_block(self):
+        self.tb.insert(1, [])
+        self.assertEquals(len(self.tb), 3)
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 3, 3 ], [], [ 6 ] ])
+
+    def test_insert_block2(self):
+        self.tb[1:1] = [ [ 'abcdef', 'ghi' ], [ 'a' ], [ 'mr', 'pink' ] ]
+        self.assertEquals(len(self.tb), 5)
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 7, 3 ], [ 7 ], [], [ 6 ], [ 6 ] ])
+
+    def test_insert_block_first(self):
+        self.tb.insert(0, [])
+        self.assertEquals(len(self.tb), 3)
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [], [ 6, 3 ], [ 6 ] ])
+
+    def test_iter_tab_sizes(self):
+        self.assertEquals(list(self.tb.iter_tab_sizes()), [ [ 6, 3 ], [ 6 ] ])
+
+    def test_iter_tab_sizes_range(self):
+        self.assertEquals(list(self.tb.iter_tab_sizes(0, 1)), [ [ 6, 3 ] ])
+        self.assertEquals(list(self.tb.iter_tab_sizes(1, 2)), [ [ 6 ] ])
+
 if __name__ == '__main__':
     unittest.main()
